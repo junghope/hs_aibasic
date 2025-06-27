@@ -1,0 +1,59 @@
+
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression, LinearRegression
+from sklearn.metrics import accuracy_score
+import numpy as np
+
+# ==========================================
+# 🌸 Part 1: 분류 - 붓꽃 종류 맞추기
+# ==========================================
+print("\n📚 Part 1: 분류 문제")
+print("목표: 꽃의 크기로 붓꽃 종류를 맞춰보자!")
+
+# 1단계: 데이터 가져오기
+print("\n1단계: 데이터 준비")
+iris = load_iris()
+flower_data = iris.data          # 꽃의 크기 정보
+flower_type = iris.target        # 정답 (어떤 종류인지)
+
+print(f"꽃 데이터 개수: {len(flower_data)}개")
+print(f"꽃 종류: {iris.target_names}")  # ['setosa' 'versicolor' 'virginica']
+
+# 2단계: 데이터 살펴보기
+print("\n2단계: 데이터 미리보기")
+# 처음 5개 꽃의 정보
+print("처음 5개 꽃의 크기:")
+for i in range(5):
+    print(f"꽃 {i+1}: {flower_data[i]} → 종류: {iris.target_names[flower_type[i]]}")
+
+# 3단계: 훈련용과 테스트용으로 나누기
+print("\n3단계: 데이터 나누기")
+X_train, X_test, y_train, y_test = train_test_split(
+    flower_data, flower_type, test_size=0.3, random_state=42)
+
+print(f"훈련용 데이터: {len(X_train)}개")
+print(f"테스트용 데이터: {len(X_test)}개")
+
+# 4단계: AI 모델 만들기
+print("\n4단계: AI 모델 훈련")
+classification_model = LogisticRegression()
+classification_model.fit(X_train, y_train)  # 훈련하기
+print("✅ 모델 훈련 완료!")
+
+# 5단계: 예측해보기
+print("\n5단계: 예측 결과")
+predictions = classification_model.predict(X_test)
+accuracy = accuracy_score(y_test, predictions)
+
+print(f"정확도: {accuracy:.2f} ({accuracy*100:.1f}%)")
+
+# 몇 개 예측 결과 보여주기
+print("\n예측 결과 예시:")
+for i in range(5):
+    actual = iris.target_names[y_test[i]]
+    predicted = iris.target_names[predictions[i]]
+    correct = "O" if actual == predicted else "X"
+    print(f"실제: {actual:10} | 예측: {predicted:10} {correct}")
