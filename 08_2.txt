@@ -1,0 +1,97 @@
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
+from sklearn.preprocessing import StandardScaler
+import numpy as np
+
+# 데이터 로드
+iris = load_iris()
+X_iris = iris.data[:, :2]  # 꽃받침 길이, 너비만 사용
+y_iris = (iris.target == 0).astype(int)  # Setosa vs Others
+
+# 데이터 분할
+X_train_iris, X_test_iris, y_train_iris, y_test_iris = train_test_split(
+    X_iris, y_iris, test_size=0.3, random_state=42)
+
+# 데이터 스케일링 (수렴 문제 해결을 위해)
+scaler = StandardScaler()
+X_train_iris_scaled = scaler.fit_transform(X_train_iris)
+X_test_iris_scaled = scaler.transform(X_test_iris)
+
+print("=== 2. 로지스틱 회귀 실습 ===")
+
+# 로지스틱 회귀 모델 (수렴 문제 해결)
+# 방법 1: max_iter 증가
+log_model = LogisticRegression(max_iter=1000, random_state=42)
+log_model.fit(X_train_iris_scaled, y_train_iris)
+
+# 예측 및 확률
+y_pred_iris = log_model.predict(X_test_iris_scaled)
+y_prob_iris = log_model.predict_proba(X_test_iris_scaled)
+
+print(f"로지스틱 회귀 정확도: {accuracy_score(y_test_iris, y_pred_iris):.3f}")
+print("\n처음 5개 샘플의 예측 확률:")
+for i in range(5):
+    prob_not_setosa = y_prob_iris[i][0]
+    prob_setosa = y_prob_iris[i][1]
+    pred_class = "Setosa" if y_pred_iris[i] == 1 else "Others"
+    print(f"샘플 {i+1}: Setosa 확률={prob_setosa:.3f}, 예측={pred_class}")
+
+print("\n=== 3. 결정 트리와 랜덤 포레스트 비교 ===")
+
+# 전체 아이리스 데이터로 다중 분류
+X_full = iris.data
+y_full = iris.target
+X_train_full, X_test_full, y_train_full, y_test_full = train_test_split(
+    X_full, y_full, test_size=0.3, random_state=42)
+
+# 전체 데이터도 스케일링
+scaler_full = StandardScaler()
+X_train_full_scaled = scaler_full.fit_transform(X_train_full)
+X_test_full_scaled = scaler_full.transform(X_test_full)
+
+# 결정 트리
+tree_model = DecisionTreeClassifier(max_depth=3, random_state=42)
+tree_model.fit(X_train_full, y_train_full)  # 트리는 스케일링 불필요
+tree_pred = tree_model.predict(X_test_full)
+tree_accuracy = accuracy_score(y_test_full, tree_pred)
+
+# 랜덤 포레스트
+rf_model = RandomForestClassifier(n_estimators=100, max_depth=3, random_state=42)
+rf_model.fit(X_train_full, y_train_full)  # 트리 기반 모델은 스케일링 불필요
+rf_pred = rf_model.predict(X_test_full)
+rf_accuracy = accuracy_score(y_test_full, rf_pred)
+
+print(f"결정 트리 정확도: {tree_accuracy:.3f}")
+print(f"랜덤 포레스트 정확도: {rf_accuracy:.3f}")
+
+# 특성 중요도 비교
+feature_names = iris.feature_names
+print("\n특성 중요도 (랜덤 포레스트):")
+for name, importance in zip(feature_names, rf_model.feature_importances_):
+    print(f"{name}: {importance:.3f}")
+
+print("\n=== 4. 교차 검증 실습 ===")
+
+# 교차 검증으로 모델 성능 평가
+models = {
+    '로지스틱 회귀': LogisticRegression(max_iter=1000, random_state=42),
+    '결정 트리': DecisionTreeClassifier(max_depth=3, random_state=42),
+    '랜덤 포레스트': RandomForestClassifier(n_estimators=50, max_depth=3, random_state=42)
+}
+
+print("5-폴드 교차 검증 결과:")
+
+# 로지스틱 회귀만 스케일링된 데이터 사용
+for name, model in models.items():
+    if name == '로지스틱 회귀':
+        # 로지스틱 회귀는 스케일링된 데이터 사용
+        X_scaled_full = StandardScaler().fit_transform(X_full)
+        cv_scores = cross_val_score(model, X_scaled_full, y_full, cv=5)
+    else:
+        # 트리 기반 모델은 원본 데이터 사용
+        cv_scores = cross_val_score(model, X_full, y_full, cv=5)
+    print(f"{name}: {cv_scores.mean():.3f} (+/- {cv_scores.std() * 2:.3f})")
