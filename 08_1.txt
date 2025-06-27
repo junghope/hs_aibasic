@@ -1,0 +1,65 @@
+print("회귀 문제")
+print("목표: 집 크기로 집 가격을 예측")
+
+# 1단계: 간단한 집 데이터 만들기
+print("\n1단계: 집 데이터 만들기")
+# 집 크기 (평수)
+house_size = house_size = np.array(list(range(20, 95, 5))) 
+
+# 랜덤시드 고정
+np.random.seed(42)
+
+# 집 가격 (억원) - 크기에 비례하되 약간의 변동 있음
+house_price = house_size * 0.8 + np.random.normal(0, 2, len(house_size)) + 10
+
+print(f"집 데이터 개수: {len(house_size)}개")
+print("집 크기와 가격 예시:")
+for i in range(5):
+    print(f"{house_size[i]}평 → {house_price[i]:.1f}억원")
+
+# 2단계: 데이터 나누기
+print("\n2단계: 데이터 나누기")
+house_size_2d = house_size.reshape(-1, 1)  # 모델이 요구하는 형태로 변환
+
+X_train_house, X_test_house, y_train_house, y_test_house = train_test_split(
+    house_size_2d, house_price, test_size=0.3, random_state=42)
+
+print(f"훈련용: {len(X_train_house)}개")
+print(f"테스트용: {len(X_test_house)}개")
+
+# 3단계: AI 모델 만들기
+print("\n3단계: AI 모델 훈련")
+regression_model = LinearRegression()
+regression_model.fit(X_train_house, y_train_house)
+print("✅ 모델 훈련 완료!")
+
+# 4단계: 예측해보기
+print("\n4단계: 예측 결과")
+price_predictions = regression_model.predict(X_test_house)
+
+# 예측 결과 보여주기
+print("예측 결과 예시:")
+for i in range(len(X_test_house)):
+    actual_price = y_test_house[i]
+    predicted_price = price_predictions[i]
+    difference = abs(actual_price - predicted_price)
+    print(f"{X_test_house[i][0]:2.0f}평 | 실제: {actual_price:4.1f}억 | 예측: {predicted_price:4.1f}억 | 차이: {difference:3.1f}억")
+
+# 5단계: 그래프로 보기
+print("\n5단계: 결과 그래프")
+plt.figure(figsize=(12, 5))
+
+# 회귀 결과 그래프
+plt.subplot(1, 2, 2)
+plt.scatter(house_size, house_price, color='blue', alpha=0.7, label='Actual Data')
+# 예측 선 그리기
+size_range = np.linspace(house_size.min(), house_size.max(), 100).reshape(-1, 1)
+price_line = regression_model.predict(size_range)
+plt.plot(size_range, price_line, color='red', linewidth=2, label='Prediction Line')
+plt.xlabel('House Size (pyeong)')
+plt.ylabel('House Price (100M KRW)')
+plt.title('House Price Prediction Result')
+plt.legend()
+
+plt.tight_layout()
+plt.show()
